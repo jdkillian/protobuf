@@ -65,29 +65,25 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
   SetCommonFieldVariables(descriptor, info, variables);
 
   (*variables)["empty_list"] = "com.google.protobuf.LazyStringArrayList.EMPTY";
-
   (*variables)["default"] = ImmutableDefaultValue(descriptor, name_resolver);
-  (*variables)["default_init"] =
-      "= " + ImmutableDefaultValue(descriptor, name_resolver);
+  (*variables)["default_init"] = "= " + ImmutableDefaultValue(descriptor, name_resolver);
   (*variables)["capitalized_type"] = "String";
-  (*variables)["tag"] =
-      StrCat(static_cast<int32>(WireFormat::MakeTag(descriptor)));
-  (*variables)["tag_size"] = StrCat(
-      WireFormat::TagSize(descriptor->number(), GetType(descriptor)));
+  (*variables)["tag"] = StrCat(static_cast<int32>(WireFormat::MakeTag(descriptor)));
+  (*variables)["tag_size"] = StrCat(WireFormat::TagSize(descriptor->number(), GetType(descriptor)));
   (*variables)["null_check"] =
       "  if (value == null) {\n"
       "    throw new NullPointerException();\n"
       "  }\n";
-  (*variables)["writeString"] = "com.google.protobuf.GeneratedMessage" +
-                                GeneratedCodeVersionSuffix() + ".writeString";
-  (*variables)["computeStringSize"] = "com.google.protobuf.GeneratedMessage" +
-                                      GeneratedCodeVersionSuffix() +
-                                      ".computeStringSize";
+  (*variables)["null_ignore"] =
+      "  if (value == null) {\n"
+      "    return this;\n"
+      "  }\n";
+  (*variables)["writeString"] = "com.google.protobuf.GeneratedMessage" + GeneratedCodeVersionSuffix() + ".writeString";
+  (*variables)["computeStringSize"] = "com.google.protobuf.GeneratedMessage" + GeneratedCodeVersionSuffix() + ".computeStringSize";
 
   // TODO(birdo): Add @deprecated javadoc when generating javadoc is supported
   // by the proto compiler
-  (*variables)["deprecation"] =
-      descriptor->options().deprecated() ? "@java.lang.Deprecated " : "";
+  (*variables)["deprecation"] = descriptor->options().deprecated() ? "@java.lang.Deprecated " : "";
   (*variables)["on_changed"] = "onChanged();";
 
   if (SupportFieldPresence(descriptor->file())) {
@@ -96,21 +92,15 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
     (*variables)["get_has_field_bit_builder"] = GenerateGetBit(builderBitIndex);
 
     // Note that these have a trailing ";".
-    (*variables)["set_has_field_bit_message"] =
-        GenerateSetBit(messageBitIndex) + ";";
-    (*variables)["set_has_field_bit_builder"] =
-        GenerateSetBit(builderBitIndex) + ";";
-    (*variables)["clear_has_field_bit_builder"] =
-        GenerateClearBit(builderBitIndex) + ";";
-
+    (*variables)["set_has_field_bit_message"] = GenerateSetBit(messageBitIndex) + ";";
+    (*variables)["set_has_field_bit_builder"] = GenerateSetBit(builderBitIndex) + ";";
+    (*variables)["clear_has_field_bit_builder"] = GenerateClearBit(builderBitIndex) + ";";
     (*variables)["is_field_present_message"] = GenerateGetBit(messageBitIndex);
   } else {
     (*variables)["set_has_field_bit_message"] = "";
     (*variables)["set_has_field_bit_builder"] = "";
     (*variables)["clear_has_field_bit_builder"] = "";
-
-    (*variables)["is_field_present_message"] =
-        "!get" + (*variables)["capitalized_name"] + "Bytes().isEmpty()";
+    (*variables)["is_field_present_message"] = "!get" + (*variables)["capitalized_name"] + "Bytes().isEmpty()";
   }
 
   // For repeated builders, one bit is used for whether the array is immutable.
@@ -120,15 +110,10 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
 
   // For repeated fields, one bit is used for whether the array is immutable
   // in the parsing constructor.
-  (*variables)["get_mutable_bit_parser"] =
-      GenerateGetBitMutableLocal(builderBitIndex);
-  (*variables)["set_mutable_bit_parser"] =
-      GenerateSetBitMutableLocal(builderBitIndex);
-
-  (*variables)["get_has_field_bit_from_local"] =
-      GenerateGetBitFromLocal(builderBitIndex);
-  (*variables)["set_has_field_bit_to_local"] =
-      GenerateSetBitToLocal(messageBitIndex);
+  (*variables)["get_mutable_bit_parser"] = GenerateGetBitMutableLocal(builderBitIndex);
+  (*variables)["set_mutable_bit_parser"] = GenerateSetBitMutableLocal(builderBitIndex);
+  (*variables)["get_has_field_bit_from_local"] = GenerateGetBitFromLocal(builderBitIndex);
+  (*variables)["set_has_field_bit_to_local"] = GenerateSetBitToLocal(messageBitIndex);
 }
 
 }  // namespace
@@ -320,7 +305,7 @@ void ImmutableStringFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder ${$set$capitalized_name$$}$(\n"
                  "    java.lang.String value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  $set_has_field_bit_builder$\n"
                  "  $name$_ = value;\n"
                  "  $on_changed$\n"
@@ -349,7 +334,7 @@ void ImmutableStringFieldGenerator::GenerateBuilderMembers(
       variables_,
       "$deprecation$public Builder ${$set$capitalized_name$Bytes$}$(\n"
       "    com.google.protobuf.ByteString value) {\n"
-      "$null_check$");
+      "$null_ignore$");
   printer->Annotate("{", "}", descriptor_);
   if (CheckUtf8(descriptor_)) {
     printer->Print(variables_, "  checkByteStringIsUtf8(value);\n");
@@ -615,7 +600,7 @@ void ImmutableStringOneofFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder ${$set$capitalized_name$$}$(\n"
                  "    java.lang.String value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  $set_oneof_case_message$;\n"
                  "  $oneof_name$_ = value;\n"
                  "  $on_changed$\n"
@@ -642,7 +627,7 @@ void ImmutableStringOneofFieldGenerator::GenerateBuilderMembers(
       variables_,
       "$deprecation$public Builder ${$set$capitalized_name$Bytes$}$(\n"
       "    com.google.protobuf.ByteString value) {\n"
-      "$null_check$");
+      "$null_ignore$");
   printer->Annotate("{", "}", descriptor_);
   if (CheckUtf8(descriptor_)) {
     printer->Print(variables_, "  checkByteStringIsUtf8(value);\n");
@@ -850,7 +835,7 @@ void RepeatedImmutableStringFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder ${$set$capitalized_name$$}$(\n"
                  "    int index, java.lang.String value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  ensure$capitalized_name$IsMutable();\n"
                  "  $name$_.set(index, value);\n"
                  "  $on_changed$\n"
@@ -862,7 +847,7 @@ void RepeatedImmutableStringFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder ${$add$capitalized_name$$}$(\n"
                  "    java.lang.String value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  ensure$capitalized_name$IsMutable();\n"
                  "  $name$_.add(value);\n"
                  "  $on_changed$\n"
@@ -899,7 +884,7 @@ void RepeatedImmutableStringFieldGenerator::GenerateBuilderMembers(
       variables_,
       "$deprecation$public Builder ${$add$capitalized_name$Bytes$}$(\n"
       "    com.google.protobuf.ByteString value) {\n"
-      "$null_check$");
+      "$null_ignore$");
   printer->Annotate("{", "}", descriptor_);
   if (CheckUtf8(descriptor_)) {
     printer->Print(variables_, "  checkByteStringIsUtf8(value);\n");

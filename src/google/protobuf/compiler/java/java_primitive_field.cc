@@ -73,31 +73,22 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
       javaType == JAVATYPE_LONG) {
     std::string capitalized_type = UnderscoresToCamelCase(
         PrimitiveTypeName(javaType), /*cap_first_letter=*/true);
-    (*variables)["field_list_type"] =
-        "com.google.protobuf.Internal." + capitalized_type + "List";
+    (*variables)["field_list_type"] = "com.google.protobuf.Internal." + capitalized_type + "List";
     (*variables)["empty_list"] = "empty" + capitalized_type + "List()";
     (*variables)["create_list"] = "new" + capitalized_type + "List()";
-    (*variables)["mutable_copy_list"] =
-        "mutableCopy(" + (*variables)["name"] + "_)";
-    (*variables)["name_make_immutable"] =
-        (*variables)["name"] + "_.makeImmutable()";
-    (*variables)["repeated_get"] =
-        (*variables)["name"] + "_.get" + capitalized_type;
-    (*variables)["repeated_add"] =
-        (*variables)["name"] + "_.add" + capitalized_type;
-    (*variables)["repeated_set"] =
-        (*variables)["name"] + "_.set" + capitalized_type;
+    (*variables)["mutable_copy_list"] = "mutableCopy(" + (*variables)["name"] + "_)";
+    (*variables)["name_make_immutable"] = (*variables)["name"] + "_.makeImmutable()";
+    (*variables)["repeated_get"] = (*variables)["name"] + "_.get" + capitalized_type;
+    (*variables)["repeated_add"] = (*variables)["name"] + "_.add" + capitalized_type;
+    (*variables)["repeated_set"] = (*variables)["name"] + "_.set" + capitalized_type;
   } else {
-    (*variables)["field_list_type"] =
-        "java.util.List<" + (*variables)["boxed_type"] + ">";
-    (*variables)["create_list"] =
-        "new java.util.ArrayList<" + (*variables)["boxed_type"] + ">()";
+    (*variables)["field_list_type"] = "java.util.List<" + (*variables)["boxed_type"] + ">";
+    (*variables)["create_list"] = "new java.util.ArrayList<" + (*variables)["boxed_type"] + ">()";
     (*variables)["mutable_copy_list"] = "new java.util.ArrayList<" +
                                         (*variables)["boxed_type"] + ">(" +
                                         (*variables)["name"] + "_)";
     (*variables)["empty_list"] = "java.util.Collections.emptyList()";
-    (*variables)["name_make_immutable"] =
-        (*variables)["name"] + "_ = java.util.Collections.unmodifiableList(" +
+    (*variables)["name_make_immutable"] = (*variables)["name"] + "_ = java.util.Collections.unmodifiableList(" +
         (*variables)["name"] + "_)";
     (*variables)["repeated_get"] = (*variables)["name"] + "_.get";
     (*variables)["repeated_add"] = (*variables)["name"] + "_.add";
@@ -109,12 +100,10 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
       IsDefaultValueJavaDefault(descriptor)
           ? ""
           : ("= " + ImmutableDefaultValue(descriptor, name_resolver));
-  (*variables)["capitalized_type"] =
-      GetCapitalizedType(descriptor, /* immutable = */ true);
-  (*variables)["tag"] =
-      StrCat(static_cast<int32>(WireFormat::MakeTag(descriptor)));
-  (*variables)["tag_size"] = StrCat(
-      WireFormat::TagSize(descriptor->number(), GetType(descriptor)));
+  (*variables)["capitalized_type"] = GetCapitalizedType(descriptor, /* immutable = */ true);
+  (*variables)["tag"] = StrCat(static_cast<int32>(WireFormat::MakeTag(descriptor)));
+  (*variables)["tag_size"] = StrCat(WireFormat::TagSize(descriptor->number(), GetType(descriptor)));
+
   if (IsReferenceType(GetJavaType(descriptor))) {
     (*variables)["null_check"] =
         "  if (value == null) {\n"
@@ -123,10 +112,18 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
   } else {
     (*variables)["null_check"] = "";
   }
-  // TODO(birdo): Add @deprecated javadoc when generating javadoc is supported
-  // by the proto compiler
-  (*variables)["deprecation"] =
-      descriptor->options().deprecated() ? "@java.lang.Deprecated " : "";
+
+  if (IsReferenceType(GetJavaType(descriptor))) {
+    (*variables)["null_ignore"] =
+        "  if (value == null) {\n"
+        "    return this;\n"
+        "  }\n";
+  } else {
+    (*variables)["null_ignore"] = "";
+  }
+
+  // TODO(birdo): Add @deprecated javadoc when generating javadoc is supported by the proto compiler
+  (*variables)["deprecation"] = descriptor->options().deprecated() ? "@java.lang.Deprecated " : "";
   int fixed_size = FixedSize(GetType(descriptor));
   if (fixed_size != -1) {
     (*variables)["fixed_size"] = StrCat(fixed_size);
@@ -139,13 +136,9 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
     (*variables)["get_has_field_bit_builder"] = GenerateGetBit(builderBitIndex);
 
     // Note that these have a trailing ";".
-    (*variables)["set_has_field_bit_message"] =
-        GenerateSetBit(messageBitIndex) + ";";
-    (*variables)["set_has_field_bit_builder"] =
-        GenerateSetBit(builderBitIndex) + ";";
-    (*variables)["clear_has_field_bit_builder"] =
-        GenerateClearBit(builderBitIndex) + ";";
-
+    (*variables)["set_has_field_bit_message"] = GenerateSetBit(messageBitIndex) + ";";
+    (*variables)["set_has_field_bit_builder"] = GenerateSetBit(builderBitIndex) + ";";
+    (*variables)["clear_has_field_bit_builder"] = GenerateClearBit(builderBitIndex) + ";";
     (*variables)["is_field_present_message"] = GenerateGetBit(messageBitIndex);
   } else {
     (*variables)["set_has_field_bit_message"] = "";
@@ -153,11 +146,9 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
     (*variables)["clear_has_field_bit_builder"] = "";
 
     if (descriptor->type() == FieldDescriptor::TYPE_BYTES) {
-      (*variables)["is_field_present_message"] =
-          "!" + (*variables)["name"] + "_.isEmpty()";
+      (*variables)["is_field_present_message"] = "!" + (*variables)["name"] + "_.isEmpty()";
     } else {
-      (*variables)["is_field_present_message"] =
-          (*variables)["name"] + "_ != " + (*variables)["default"];
+      (*variables)["is_field_present_message"] = (*variables)["name"] + "_ != " + (*variables)["default"];
     }
   }
 
@@ -168,15 +159,10 @@ void SetPrimitiveVariables(const FieldDescriptor* descriptor,
 
   // For repeated fields, one bit is used for whether the array is immutable
   // in the parsing constructor.
-  (*variables)["get_mutable_bit_parser"] =
-      GenerateGetBitMutableLocal(builderBitIndex);
-  (*variables)["set_mutable_bit_parser"] =
-      GenerateSetBitMutableLocal(builderBitIndex);
-
-  (*variables)["get_has_field_bit_from_local"] =
-      GenerateGetBitFromLocal(builderBitIndex);
-  (*variables)["set_has_field_bit_to_local"] =
-      GenerateSetBitToLocal(messageBitIndex);
+  (*variables)["get_mutable_bit_parser"] = GenerateGetBitMutableLocal(builderBitIndex);
+  (*variables)["set_mutable_bit_parser"] = GenerateSetBitMutableLocal(builderBitIndex);
+  (*variables)["get_has_field_bit_from_local"] = GenerateGetBitFromLocal(builderBitIndex);
+  (*variables)["set_has_field_bit_to_local"] = GenerateSetBitToLocal(messageBitIndex);
 }
 
 }  // namespace
@@ -261,7 +247,7 @@ void ImmutablePrimitiveFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder "
                  "${$set$capitalized_name$$}$($type$ value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  $set_has_field_bit_builder$\n"
                  "  $name$_ = value;\n"
                  "  $on_changed$\n"
@@ -540,7 +526,7 @@ void ImmutablePrimitiveOneofFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder "
                  "${$set$capitalized_name$$}$($type$ value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  $set_oneof_case_message$;\n"
                  "  $oneof_name$_ = value;\n"
                  "  $on_changed$\n"
@@ -743,7 +729,7 @@ void RepeatedImmutablePrimitiveFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder ${$set$capitalized_name$$}$(\n"
                  "    int index, $type$ value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  ensure$capitalized_name$IsMutable();\n"
                  "  $repeated_set$(index, value);\n"
                  "  $on_changed$\n"
@@ -755,7 +741,7 @@ void RepeatedImmutablePrimitiveFieldGenerator::GenerateBuilderMembers(
   printer->Print(variables_,
                  "$deprecation$public Builder "
                  "${$add$capitalized_name$$}$($type$ value) {\n"
-                 "$null_check$"
+                 "$null_ignore$"
                  "  ensure$capitalized_name$IsMutable();\n"
                  "  $repeated_add$(value);\n"
                  "  $on_changed$\n"
